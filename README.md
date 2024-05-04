@@ -1,21 +1,18 @@
-# Llama-3-8B-Instruct QLoRA PEFT
+# Llama-3-8B-Instruct QLoRA PEFT Method
 
-本文将从以下几个方面来介绍**Llama3的下载和使用**，**在EmoLLM项目上进行基于Xtuner微调**。
+**Downloading and using Llama3**，**Xtuner based fine-tuning was performed on the MindLLM project**.
 
-- Huggingface上Llama3模型使用申请
-- 实验环境搭建
-- 下载LLama3模型和github安装
-- 下载和安装Xtuner
-- 修改Xtuner模型配置文件
-- 在EmoLLM项目上进行基于Xtuner进行QLoRA微调
+- Llama3 model application on Huggingface
+- Construction of Experimental Environment
+- Download and install Xtuner
+- Modify the Xtuner model configuration file
+- QLoRA fine-tuning based on Xtuner was carried out on the EmoLLM project
 
-## 模型和有关GitHub项目下载
+## Model and related GitHub project to download
 
-### Llama-3-8B-Instruct模型下载
+### Llama-3-8B-Instruct download
 
-我们这里采用的是Meta-Llama-3-8B-Instruct模型
-
-该模型已经**针对指令和任务数据集**进行了 fine-tuning，使其更适合**需要遵循指令或完成任务的应用场景**。(The "Instruct" suffix indicates that this model has been fine-tuned on a dataset of instructions and tasks, making it more suitable for applications that require following instructions or completing tasks.)
+The "Instruct" suffix indicates that this model has been fine-tuned on a dataset of instructions and tasks, making it more suitable for applications that require following instructions or completing tasks.
 
 ```python
 from modelscope import snapshot_download
@@ -26,9 +23,8 @@ print(model_dir)
 
 ![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539295924-090cc0a2-11e8-47cb-85e2-2bd3c8952606.png#averageHue=%23050910&clientId=uc3565ceb-1d40-4&from=paste&id=udf3bb6a7&originHeight=399&originWidth=431&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=uba96494a-41be-4549-8c03-7b494d925fb&title=)
 
-## 实验环境搭建
+## Experimental Environment
 
-### 建议新建环境
 
 ```bash
 conda create -n llama python=3.10
@@ -47,7 +43,7 @@ conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=
 git clone https://github.com/InternLM/xtuner
 ```
 
-查看更新的`/root/xtuner/xtuner/utils/templates.py`中`llama3_chat`的模板
+`llama3_chat` template in `/root/xtuner/xtuner/utils/templates.py`
 
 ```python
 llama3_chat=dict(
@@ -61,78 +57,28 @@ llama3_chat=dict(
     STOP_WORDS=['<|eot_id|>']),
 ```
 
-- 微调模型是为对话应用训练的。
-- 为了获得它们的预期特性和性能，需要遵循 [ChatFormat](https://github.com/meta-llama/llama3/blob/main/llama/tokenizer.py#L202) 中定义的特定格式：
-  1. 提示以特殊令牌 <|begin_of_text|> 开始，之后跟随一个或多个消息。
-  2. 每条消息以标签 <|start_header_id|> 开始，角色为 system、user 或 assistant，并以标签 <|end_header_id|> 结束。
-  3. 在双换行 \n\n 之后，消息的内容随之而来。每条消息的结尾由 <|eot_id|> 令牌标记。
-- Ref： [ArtificialZeng/llama3_explained](https://github.com/ArtificialZeng/llama3_explained)
-
-### 安装xtuner-0.1.18.dev0
+### Install xtuner-0.1.18.dev0
 
 ```python
-# 进入源码目录
 cd /root/xtuner/xtuner
 
-# 从源码安装 XTuner
 pip install -e '.[all]'
 ```
 
 ![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539296026-ab8aa256-d55c-4b52-85fc-807bc7e38ed5.png#averageHue=%23384c57&clientId=uc3565ceb-1d40-4&from=paste&id=u1be0c9be&originHeight=318&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=u6c2f10b3-fd9b-4eed-a123-e718d30f87f&title=)
 
-## 配置文件和参数调整
-
-### 修改配置文件
-
-我们这里可以参照[EmoLLM](https://link.zhihu.com/?target=https%3A//github.com/SmartFlowAI/EmoLLM)的[README_internlm2_7b_base_qlora.md](xtuner_config/README_internlm2_7b_base_qlora.md)来进行修改
-这里主要修改模型路径`pretrained_model_name_or_path` 和对话模板`prompt_template` ，将我们下载的Llama模型路径`Meta-Llama-3-8B-Instruct`和修改后的对话模板`llama3_chatM` 改到对应的位置即可
-
-```python
-# pretrained_model_name_or_path = '/root/share/model_repos/internlm2-chat-7b'
-pretrained_model_name_or_path = '/root/models/LLM-Research/Meta-Llama-3-8B-Instruct'
 
 
-# prompt_template = PROMPT_TEMPLATE.internlm2_chat  # there is No internlm2_base
-prompt_template = PROMPT_TEMPLATE.llama3_chatM  # there is No internlm2_base
+### Adjust the parameters according to the hardware configuration
 
-
-# alpaca_en_path = 'tatsu-lab/alpaca'
-# alpaca_en = dict(
-#    type=process_hf_dataset,
-#    dataset=dict(type=load_dataset, path=alpaca_en_path),）
-
-data_path = '../datasets/multi_turn_dataset_2.json'
-alpaca_en = dict(
-    type=process_hf_dataset,
-    dataset=dict(type=load_dataset, path='json', data_files=dict(train=data_path)),）
-
-    # configure default hooks
-    default_hooks = dict(
-        # save checkpoint per `save_steps`.
-        checkpoint=dict(
-            type=CheckpointHook,
-
-            # by_epoch=False,
-            # interval=save_steps,
-            interval=1,
-
-            max_keep_ckpts=save_total_limit),
-    )
-```
-
-### 根据硬件配置调整参数
-
-除修改模型路径和对话模板之外，还需要根据自己的GPU硬件配置来调整一下有关参数
 
 ![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539296391-a1dd32ce-7dd9-4ccc-9d85-6d299dad2bf8.png#averageHue=%23080d14&clientId=uc3565ceb-1d40-4&from=paste&id=u97f1acad&originHeight=381&originWidth=652&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=u9fcd4a33-10af-47f5-8031-e30c1844c49&title=)
 
-这里还有个问题，就是需要**设置下环境变量**`PYTORCH_CUDA_ALLOC_CON`，来更好的利用所有的**GPU显存**
+**Set the environment variable**`PYTORCH_CUDA_ALLOC_CON`，To make better use of all the **GPU memory **
 
 ```python
 export 'PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256'
 ```
-
-采用以下的配置，可以使单张A100基本跑满
 
 ```python
 max_length = 2048
@@ -143,28 +89,22 @@ lr = 1e-4
 evaluation_freq = 500
 ```
 
-还有一个需要和匹配的是model.lora中的r和lora_alpha参数，也需要根据自己的硬件环境来调整
-
 ```python
 r=32,
 lora_alpha=64,
 ```
 
-### 添加中文回答prompt
+### Add a Chinese answer prompt
 
-更重要的是，**Llama3目前对中文的支持**不太好，所以可能需要你在`system prompt`中加入一些和相关任务的调整, 如`中文领域`和`，接下来你将只使用中文来回答和咨询问题`。
+What's more, **Llama3 currently doesn't support Chinese ** very well, so you may need to add some adjustments to the 'system prompt' related to tasks such as' Chinese field 'and', and then you will only answer and ask questions in Chinese '.
 
 ```python
 SYSTEM = "你由EmoLLM团队打造的中文领域心理健康助手, 是一个研究过无数具有心理健康问题的病人与心理健康医生对话的心理专家, 在心理方面拥有广博的知识储备和丰富的研究咨询经验，接下来你将只使用中文来回答和咨询问题。"
 ```
 
-修改好配置文件，就可以微调启动了！
 
-## 数据格式
 
-数据集介绍详见[README_internlm2_7b_base_qlora.md](README_internlm2_7b_base_qlora.md)和[datasets](../datasets)
-
-训练用的数据与[README_internlm2_7b_base_qlora.md](README_internlm2_7b_base_qlora.md)中使用的数据集完全相同, 用户可以只选择[multi_turn_dataset_2.json](../datasets/multi_turn_dataset_2.json)外加自我认知数据集(待更新)才尝试训练, 或者采用[processed](../datasets/processed)文件夹中的处理函数进行额外处理. 最终的训练数据是是对话的形式(可以包含多轮或者单轮)，如
+## Data format
 
 ```python
 [
@@ -206,9 +146,8 @@ SYSTEM = "你由EmoLLM团队打造的中文领域心理健康助手, 是一个�
 ]
 ```
 
-## 微调
 
-### 微调指令
+### Fine tuning instructions
 
 ```python
 cd xtuner_config
@@ -217,30 +156,15 @@ xtuner train llama3_8b_instruct_qlora_alpaca_e3_M.py --deepspeed deepspeed_zero2
 
 ### 训练开始的截图
 
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539296499-3c5956ce-38dc-4214-bac6-00b39dad91fc.png#averageHue=%230a1119&clientId=uc3565ceb-1d40-4&from=paste&id=u1d0c1573&originHeight=434&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=ue48b6c84-72b4-41b0-9dc3-6a7477fd77a&title=)
-
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539297205-30e6314e-c08b-4afa-82d3-31b8ef800d85.png#averageHue=%23192027&clientId=uc3565ceb-1d40-4&from=paste&id=u8949a500&originHeight=405&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=u74e39023-ef4f-47ee-83dc-6f15af2fbe0&title=)
-
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539297193-414ed828-b65e-43fd-9fb4-ace4cbe1f35c.png#averageHue=%23090e14&clientId=uc3565ceb-1d40-4&from=paste&id=u488b21e9&originHeight=357&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=u822349ed-7efe-40c9-b5a2-26b51b287c1&title=)
-
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539297228-d8f00d2c-868e-4bfc-a01f-b941437e1976.png#averageHue=%2311171e&clientId=uc3565ceb-1d40-4&from=paste&id=u7b174934&originHeight=304&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=u9b08bb9d-08b9-437a-9492-4bed88fd11c&title=)
-
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539297173-37e20031-6621-4f7d-877c-8a0a6de3e824.png#averageHue=%230a1119&clientId=uc3565ceb-1d40-4&from=paste&id=u83b53f99&originHeight=347&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=uc60c9dbd-5ff3-473e-8e0f-b6b7f96c291&title=)
-
 ![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539297483-535d17f4-8f56-409e-8bd9-b378cde27571.png#averageHue=%230c121b&clientId=uc3565ceb-1d40-4&from=paste&id=u8dad52e2&originHeight=167&originWidth=1235&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=ub8de5823-f3ef-4828-8e42-4ed425f15ae&title=)
 
-### 500step打印
+### 500step print
 
 ![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539298145-001f7e4d-ff2a-480a-8343-479dec79ae0a.png#averageHue=%230d131a&clientId=uc3565ceb-1d40-4&from=paste&id=ud6b548b1&originHeight=426&originWidth=720&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=u2d75814e-53d3-4abb-b01a-7479a26ebb1&title=)
 
-### 训练完一个epoch之后
+## The resulting PTH model is transformed into a HuggingFace model
 
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713544767972-23325390-9c8c-4131-aa88-db100543ec26.png?x-oss-process=image%2Fformat%2Cwebp)
-
-## 将得到的 PTH 模型转换为 HuggingFace 模型
-
-即：生成 HuggingFace Adapter 文件夹, 用于和原模型权重合并
-
+That is, generate a HuggingFace Adapter folder to merge with the original model weights
 ```python
 cd xtuner_config
 mkdir hf
@@ -248,7 +172,7 @@ export MKL_SERVICE_FORCE_INTEL=1
 xtuner convert pth_to_hf llama3_8b_instruct_qlora_alpaca_e3_M.py ./work_dirs/llama3_8b_instruct_qlora_alpaca_e3_M/epoch_1.pth ./hf_llama3
 ```
 
-## 将 HuggingFace Adapter QLoRA权重合并到大语言模型
+## Incorporation of HuggingFace Adapter QLoRA weights into the large language model
 
 ```python
 xtuner convert merge /root/models/LLM-Research/Meta-Llama-3-8B-Instruct ./hf_llama3 ./merged_Llama3_8b_instruct --max-shard-size 2GB
@@ -259,9 +183,7 @@ xtuner convert merge /root/models/LLM-Research/Meta-Llama-3-8B-Instruct ./hf_lla
 #     --max-shard-size 2GB
 ```
 
-## 测试
-
-在EmoLLM的demo文件夹下，创建`cli_Llama3.py`(文件修改自[社区分享](https://github.com/CrazyBoyM/llama3-Chinese-chat),感谢~)，注意，这里我们采用本地离线测试（offline model），在线测试可以上传模型到有关平台后，再下载测试
+## Test
 
 ```python
 from transformers import AutoTokenizer, AutoConfig, AddedToken, AutoModelForCausalLM, BitsAndBytesConfig
@@ -479,24 +401,10 @@ if __name__ == '__main__':
     main()
 ```
 
-执行
 
 ```python
 cd demo
 python cli_Llama3.py
 ```
 
-执行对话结果如下
 
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713556239463-e0cb78f7-d3ab-40d8-9d08-9e30eb9340a8.png?x-oss-process=image%2Fformat%2Cwebp)
-
-![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713556239545-e7f4e48c-0738-4d28-a3b0-51b6d281800c.png?x-oss-process=image%2Fformat%2Cwebp)
-
-## 其他
-
-欢迎大家给[Xtuner](https://link.zhihu.com/?target=https%3A//github.com/InternLM/xtuner)和[EmoLLM](https://link.zhihu.com/?target=https%3A//github.com/aJupyter/EmoLLM)点点star~
-
-### **知乎原文**
-
-1. [Llama3][EmoLLM][Minisora]Meta Llama 3快速上手：用EmoLLM数据基于Xtuner采用QLoRA微调Meta-Llama-3-8B-Instruct模型【V0】 - 知乎 https://zhuanlan.zhihu.com/p/693321573
-2. [Llama3][EmoLLM][Minisora]Meta Llama 3快速上手：用EmoLLM数据基于Xtuner采用QLoRA微调Meta-Llama-3-8B-Instruct模型【V1】 - 知乎 https://zhuanlan.zhihu.com/p/693454096
