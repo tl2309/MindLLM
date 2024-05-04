@@ -1,4 +1,4 @@
-# Llama-3-8B-Instruct QLoRA 快速微调指南
+# Llama-3-8B-Instruct QLoRA PEFT
 
 本文将从以下几个方面来介绍**Llama3的下载和使用**，**在EmoLLM项目上进行基于Xtuner微调**。
 
