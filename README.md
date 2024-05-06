@@ -154,7 +154,7 @@ cd xtuner_config
 xtuner train llama3_8b_instruct_qlora_alpaca_e3_M.py --deepspeed deepspeed_zero2
 ```
 
-### 训练开始的截图
+### Training
 
 ![](https://cdn.nlark.com/yuque/0/2024/png/43035260/1713539297483-535d17f4-8f56-409e-8bd9-b378cde27571.png#averageHue=%230c121b&clientId=uc3565ceb-1d40-4&from=paste&id=u8dad52e2&originHeight=167&originWidth=1235&originalType=url&ratio=1&rotation=0&showTitle=false&status=done&style=none&taskId=ub8de5823-f3ef-4828-8e42-4ed425f15ae&title=)
 
