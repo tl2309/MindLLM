@@ -151,7 +151,7 @@ SYSTEM = "你由EmoLLM团队打造的中文领域心理健康助手, 是一个�
 
 ```python
 cd xtuner_config
-xtuner train llama3_8b_instruct_qlora_alpaca_e3_M.py --deepspeed deepspeed_zero2
+xtuner train llama3_8b_instruct_qlora_alpaca_e3.py --deepspeed deepspeed_zero2
 ```
 
 ### Training
